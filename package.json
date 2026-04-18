@@ -1,0 +1,16 @@
+{
+  "name": "discord-media-request-bot",
+  "version": "1.0.0",
+  "description": "Discord bot для обработки заявок на media роль",
+  "main": "media-request-bot.js",
+  "scripts": {
+    "start": "node media-request-bot.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.5"
+  }
+}
