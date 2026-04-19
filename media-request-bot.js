@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, PermissionFlagsBits, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, PermissionFlagsBits, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 const client = new Client({
   intents: [
@@ -26,8 +26,8 @@ client.once('ready', async () => {
       .addComponents(
         new ButtonBuilder()
           .setCustomId('create_ticket')
-          .setLabel('📝 ᴨодᴀᴛь зᴀяʙᴋу')
-          .setStyle(ButtonStyle.Primary)
+          .setLabel('◆ ᴨодᴀᴛь зᴀяʙᴋу')
+          .setStyle(ButtonStyle.Secondary)
       );
 
     // Проверяем есть ли уже сообщение
@@ -37,11 +37,11 @@ client.once('ready', async () => {
     if (!botMessage) {
       const embed = {
         color: 0x2B2D31,
-        title: '🎬 ᴢᴀяʙᴋᴀ ɴᴀ ᴩоᴧь ᴍᴇᴅɪᴀ',
+        title: '❤︎ ᴢᴀяʙᴋᴀ ɴᴀ ᴩоᴧь ᴍᴇᴅɪᴀ',
         description: '**Хотите стать частью нашей media команды?**\n\n' +
-          '✨ Нажмите на кнопку ниже чтобы подать заявку\n' +
-          '📋 Заполните форму с вопросами\n' +
-          '⏳ Дождитесь решения от media requester\n\n' +
+          '◆ Нажмите на кнопку ниже чтобы подать заявку\n' +
+          '◇ Заполните форму с вопросами\n' +
+          '◆ Дождитесь решения от media requester\n\n' +
           '> *Убедитесь что вы соответствуете требованиям перед подачей заявки*',
         image: {
           url: 'attachment://media-image.jpg'
@@ -63,7 +63,7 @@ client.once('ready', async () => {
   }
 });
 
-// Обработка нажатия кнопки создания тикета
+// Обработка нажатия кнопок
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isButton()) return;
 
@@ -71,10 +71,19 @@ client.on('interactionCreate', async (interaction) => {
   if (interaction.customId === 'create_ticket') {
     // Проверка на активный тикет
     if (activeTickets.has(interaction.user.id)) {
-      return interaction.reply({
-        content: 'У вас уже есть активный тикет!',
-        ephemeral: true
-      });
+      const ticketChannelId = activeTickets.get(interaction.user.id);
+      try {
+        const ticketChannel = await interaction.guild.channels.fetch(ticketChannelId);
+        if (ticketChannel) {
+          return interaction.reply({
+            content: `У вас уже есть активный тикет: ${ticketChannel}`,
+            ephemeral: true
+          });
+        }
+      } catch (error) {
+        // Канал не найден, удаляем из активных
+        activeTickets.delete(interaction.user.id);
+      }
     }
 
     await interaction.deferReply({ ephemeral: true });
@@ -121,7 +130,7 @@ client.on('interactionCreate', async (interaction) => {
       // Отправляем форму в тикет
       const formEmbed = {
         color: 0x2B2D31,
-        title: '📋 ꜰᴏʀᴍᴀ ᴢᴀяʙᴋɪ ɴᴀ ᴍᴇᴅɪᴀ',
+        title: '◇ ꜰᴏʀᴍᴀ ᴢᴀяʙᴋɪ ɴᴀ ᴍᴇᴅɪᴀ',
         description: `${interaction.user}, пожалуйста заполните и отправьте форму подачи на ᴍᴇᴅɪᴀ:\n\n` +
           `**1.** Сколько вам лет?\n` +
           `**2.** Насколько хорошо вы понимаете правила нашего сервера?\n` +
@@ -157,7 +166,7 @@ client.on('interactionCreate', async (interaction) => {
   // Принять тикет
   if (interaction.customId === 'accept_ticket') {
     const channel = interaction.channel;
-    const userId = Array.from(activeTickets.entries()).find(([uid, cid]) => cid === channel.id)?.[0];
+    const userId = Array.from(activeTickets.entries()).find(([, cid]) => cid === channel.id)?.[0];
     
     if (!userId) return;
 
@@ -170,7 +179,7 @@ client.on('interactionCreate', async (interaction) => {
 
     const acceptEmbed = {
       color: 0xFFFFFF,
-      title: '✅ ᴢᴀяʙᴋᴀ ᴨʀɪɴяᴛᴀ',
+      title: '◆ ᴢᴀяʙᴋᴀ ᴨʀɪɴяᴛᴀ',
       description: `${user}, **Поздравляем!**\n\nВы приняты в media команду\n\n> *Роль будет выдана администратором*`,
       footer: {
         text: 'Нажмите кнопку ниже чтобы закрыть тикет'
@@ -184,8 +193,8 @@ client.on('interactionCreate', async (interaction) => {
       .addComponents(
         new ButtonBuilder()
           .setCustomId('delete_ticket')
-          .setLabel('🗑️ Удалить тикет')
-          .setStyle(ButtonStyle.Danger)
+          .setLabel('◇ Удалить тикет')
+          .setStyle(ButtonStyle.Secondary)
       );
 
     await interaction.update({ components: [deleteButton] });
@@ -194,7 +203,7 @@ client.on('interactionCreate', async (interaction) => {
   // Отклонить тикет
   if (interaction.customId === 'reject_ticket') {
     const channel = interaction.channel;
-    const userId = Array.from(activeTickets.entries()).find(([uid, cid]) => cid === channel.id)?.[0];
+    const userId = Array.from(activeTickets.entries()).find(([, cid]) => cid === channel.id)?.[0];
     
     if (!userId) return;
 
@@ -207,7 +216,7 @@ client.on('interactionCreate', async (interaction) => {
 
     const rejectEmbed = {
       color: 0x000000,
-      title: '❌ ᴢᴀяʙᴋᴀ ᴏᴛᴋʟᴏɴᴇɴᴀ',
+      title: '◇ ᴢᴀяʙᴋᴀ ᴏᴛᴋʟᴏɴᴇɴᴀ',
       description: `${user}, К сожалению вы не приняты в media\n\n> *Вы можете подать заявку повторно позже*`,
       footer: {
         text: 'Нажмите кнопку ниже чтобы закрыть тикет'
@@ -221,8 +230,8 @@ client.on('interactionCreate', async (interaction) => {
       .addComponents(
         new ButtonBuilder()
           .setCustomId('delete_ticket')
-          .setLabel('🗑️ Удалить тикет')
-          .setStyle(ButtonStyle.Danger)
+          .setLabel('◇ Удалить тикет')
+          .setStyle(ButtonStyle.Secondary)
       );
 
     await interaction.update({ components: [deleteButton] });
@@ -233,7 +242,7 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.reply('Тикет будет удален через 5 секунд...');
     
     const channel = interaction.channel;
-    const userId = Array.from(activeTickets.entries()).find(([uid, cid]) => cid === channel.id)?.[0];
+    const userId = Array.from(activeTickets.entries()).find(([, cid]) => cid === channel.id)?.[0];
     
     if (userId) {
       activeTickets.delete(userId);
@@ -265,7 +274,7 @@ client.on('messageCreate', async (message) => {
     
     const responseEmbed = {
       color: 0xFFFFFF,
-      title: '⏳ ᴢᴀяʙᴋᴀ ᴨʀɪɴяᴛᴀ',
+      title: '◆ ᴢᴀяʙᴋᴀ ᴨʀɪɴяᴛᴀ',
       description: `Ваше сообщение находится в обработке\n\nИнформация передана ответственному за media ${mediaRole}\n\n> *Пожалуйста ожидайте решения*`,
       footer: {
         text: 'Обычно это занимает до 24 часов'
@@ -273,58 +282,34 @@ client.on('messageCreate', async (message) => {
     };
     
     await channel.send({ embeds: [responseEmbed] });
-  }
-});
 
-// Slash команда /ticket для media requester
-client.on('interactionCreate', async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
-  
-  if (interaction.commandName === 'ticket') {
-    const member = interaction.member;
-    const mediaRole = interaction.guild.roles.cache.get(process.env.MEDIA_ROLE_ID);
-    
-    if (!member.roles.cache.has(mediaRole.id)) {
-      return interaction.reply({
-        content: 'У вас нет прав для использования этой команды',
-        ephemeral: true
-      });
-    }
-
-    // Проверяем что это канал тикета
-    const channelName = interaction.channel.name;
-    if (!channelName.startsWith('ᴍᴇᴅɪᴀ-ᴛɪᴄᴋᴇᴛ-')) {
-      return interaction.reply({
-        content: 'Эта команда работает только в каналах тикетов',
-        ephemeral: true
-      });
-    }
-
+    // Отправляем кнопки управления для media requester
     const buttons = new ActionRowBuilder()
       .addComponents(
         new ButtonBuilder()
           .setCustomId('accept_ticket')
-          .setLabel('✅ Принять тикет')
-          .setStyle(ButtonStyle.Success),
+          .setLabel('◆ Принять тикет')
+          .setStyle(ButtonStyle.Secondary),
         new ButtonBuilder()
           .setCustomId('reject_ticket')
-          .setLabel('❌ Отклонить')
-          .setStyle(ButtonStyle.Danger)
+          .setLabel('◇ Отклонить')
+          .setStyle(ButtonStyle.Secondary)
       );
 
     const controlEmbed = {
       color: 0x2B2D31,
-      title: '🎛️ ᴜᴘʀᴀʙʟᴇɴɪᴇ ᴛɪᴋᴇᴛᴏᴍ',
+      title: '◇ ᴜᴘʀᴀʙʟᴇɴɪᴇ ᴛɪᴋᴇᴛᴏᴍ',
       description: 'Выберите действие для этой заявки:\n\n' +
-        '✅ **Принять** - одобрить заявку\n' +
-        '❌ **Отклонить** - отклонить заявку\n\n' +
+        '◆ **Принять** - одобрить заявку\n' +
+        '◇ **Отклонить** - отклонить заявку\n\n' +
         '> *После выбора действия появится кнопка удаления тикета*',
       footer: {
         text: 'Media Requester Panel'
       }
     };
 
-    await interaction.reply({
+    await channel.send({
+      content: `${mediaRole}`,
       embeds: [controlEmbed],
       components: [buttons]
     });
