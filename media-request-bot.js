@@ -130,7 +130,7 @@ client.on('interactionCreate', async (interaction) => {
       // Отправляем форму в тикет
       const formEmbed = {
         color: 0x2B2D31,
-        title: '◇ ꜰᴏʀᴍᴀ ᴢᴀяʙᴋɪ ɴᴀ ᴍᴇᴅɪᴀ',
+        title: '◇ ɸоᴩʍᴀ зᴀяʙᴋи нᴀ ᴍᴇᴅɪᴀ',
         description: `${interaction.user}, пожалуйста заполните и отправьте форму подачи на ᴍᴇᴅɪᴀ:\n\n` +
           `**1.** Сколько вам лет?\n` +
           `**2.** Насколько хорошо вы понимаете правила нашего сервера?\n` +
@@ -179,7 +179,7 @@ client.on('interactionCreate', async (interaction) => {
 
     const acceptEmbed = {
       color: 0xFFFFFF,
-      title: '◆ ᴢᴀяʙᴋᴀ ᴨʀɪɴяᴛᴀ',
+      title: '◆ зᴀяʙᴋᴀ ᴨᴩиняᴛᴀ',
       description: `${user}, **Поздравляем!**\n\nВы приняты в media команду\n\n> *Роль будет выдана администратором*`,
       footer: {
         text: 'Нажмите кнопку ниже чтобы закрыть тикет'
@@ -216,7 +216,7 @@ client.on('interactionCreate', async (interaction) => {
 
     const rejectEmbed = {
       color: 0x000000,
-      title: '◇ ᴢᴀяʙᴋᴀ ᴏᴛᴋʟᴏɴᴇɴᴀ',
+      title: '◇ зᴀяʙᴋᴀ оᴛᴋᴧонᴇннᴀ',
       description: `${user}, К сожалению вы не приняты в media\n\n> *Вы можете подать заявку повторно позже*`,
       footer: {
         text: 'Нажмите кнопку ниже чтобы закрыть тикет'
@@ -274,7 +274,7 @@ client.on('messageCreate', async (message) => {
     
     const responseEmbed = {
       color: 0xFFFFFF,
-      title: '◆ ᴢᴀяʙᴋᴀ ᴨʀɪɴяᴛᴀ',
+      title: '◆ зᴀяʙᴋᴀ ᴨᴩиняᴛᴀ',
       description: `Ваше сообщение находится в обработке\n\nИнформация передана ответственному за media ${mediaRole}\n\n> *Пожалуйста ожидайте решения*`,
       footer: {
         text: 'Обычно это занимает до 24 часов'
@@ -283,7 +283,7 @@ client.on('messageCreate', async (message) => {
     
     await channel.send({ embeds: [responseEmbed] });
 
-    // Отправляем кнопки управления для media requester
+    // Отправляем кнопки управления для media requester (только они видят)
     const buttons = new ActionRowBuilder()
       .addComponents(
         new ButtonBuilder()
@@ -298,7 +298,7 @@ client.on('messageCreate', async (message) => {
 
     const controlEmbed = {
       color: 0x2B2D31,
-      title: '◇ ᴜᴘʀᴀʙʟᴇɴɪᴇ ᴛɪᴋᴇᴛᴏᴍ',
+      title: '◇ уᴨᴩᴀʙᴧᴇниᴇ ᴛиᴋᴇᴛоʍ',
       description: 'Выберите действие для этой заявки:\n\n' +
         '◆ **Принять** - одобрить заявку\n' +
         '◇ **Отклонить** - отклонить заявку\n\n' +
@@ -308,11 +308,32 @@ client.on('messageCreate', async (message) => {
       }
     };
 
-    await channel.send({
+    // Отправляем сообщение с упоминанием роли, но делаем embed видимым только для media requester
+    const controlMessage = await channel.send({
       content: `${mediaRole}`,
       embeds: [controlEmbed],
       components: [buttons]
     });
+
+    // Скрываем сообщение от обычного пользователя через права канала
+    // Убираем права на просмотр истории у создателя тикета временно
+    const userId = Array.from(activeTickets.entries()).find(([, cid]) => cid === channel.id)?.[0];
+    if (userId) {
+      await channel.permissionOverwrites.edit(userId, {
+        ViewChannel: true,
+        SendMessages: true,
+        ReadMessageHistory: false
+      });
+      
+      // Возвращаем права через 2 секунды (чтобы не видел сообщение с кнопками)
+      setTimeout(async () => {
+        await channel.permissionOverwrites.edit(userId, {
+          ViewChannel: true,
+          SendMessages: true,
+          ReadMessageHistory: true
+        });
+      }, 2000);
+    }
   }
 });
 
