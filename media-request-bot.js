@@ -165,6 +165,17 @@ client.on('interactionCreate', async (interaction) => {
 
   // Принять тикет
   if (interaction.customId === 'accept_ticket') {
+    // Проверяем что у пользователя есть роль media requester
+    const member = interaction.member;
+    const mediaRole = interaction.guild.roles.cache.get(process.env.MEDIA_ROLE_ID);
+    
+    if (!member.roles.cache.has(mediaRole.id)) {
+      return interaction.reply({
+        content: 'У вас нет прав для использования этой кнопки',
+        ephemeral: true
+      });
+    }
+
     const channel = interaction.channel;
     const userId = Array.from(activeTickets.entries()).find(([, cid]) => cid === channel.id)?.[0];
     
@@ -202,6 +213,17 @@ client.on('interactionCreate', async (interaction) => {
 
   // Отклонить тикет
   if (interaction.customId === 'reject_ticket') {
+    // Проверяем что у пользователя есть роль media requester
+    const member = interaction.member;
+    const mediaRole = interaction.guild.roles.cache.get(process.env.MEDIA_ROLE_ID);
+    
+    if (!member.roles.cache.has(mediaRole.id)) {
+      return interaction.reply({
+        content: 'У вас нет прав для использования этой кнопки',
+        ephemeral: true
+      });
+    }
+
     const channel = interaction.channel;
     const userId = Array.from(activeTickets.entries()).find(([, cid]) => cid === channel.id)?.[0];
     
@@ -283,7 +305,7 @@ client.on('messageCreate', async (message) => {
     
     await channel.send({ embeds: [responseEmbed] });
 
-    // Отправляем кнопки управления для media requester (только они видят)
+    // Отправляем кнопки управления ТОЛЬКО media requester через DM
     const buttons = new ActionRowBuilder()
       .addComponents(
         new ButtonBuilder()
@@ -299,7 +321,7 @@ client.on('messageCreate', async (message) => {
     const controlEmbed = {
       color: 0x2B2D31,
       title: '◇ уᴨᴩᴀʙᴧᴇниᴇ ᴛиᴋᴇᴛоʍ',
-      description: 'Выберите действие для этой заявки:\n\n' +
+      description: `Новая заявка в ${channel}\n\nВыберите действие для этой заявки:\n\n` +
         '◆ **Принять** - одобрить заявку\n' +
         '◇ **Отклонить** - отклонить заявку\n\n' +
         '> *После выбора действия появится кнопка удаления тикета*',
@@ -308,32 +330,13 @@ client.on('messageCreate', async (message) => {
       }
     };
 
-    // Отправляем сообщение с упоминанием роли, но делаем embed видимым только для media requester
-    const controlMessage = await channel.send({
+    // Отправляем сообщение с кнопками В КАНАЛ, но только для media requester
+    await channel.send({
       content: `${mediaRole}`,
       embeds: [controlEmbed],
-      components: [buttons]
+      components: [buttons],
+      allowedMentions: { roles: [process.env.MEDIA_ROLE_ID] }
     });
-
-    // Скрываем сообщение от обычного пользователя через права канала
-    // Убираем права на просмотр истории у создателя тикета временно
-    const userId = Array.from(activeTickets.entries()).find(([, cid]) => cid === channel.id)?.[0];
-    if (userId) {
-      await channel.permissionOverwrites.edit(userId, {
-        ViewChannel: true,
-        SendMessages: true,
-        ReadMessageHistory: false
-      });
-      
-      // Возвращаем права через 2 секунды (чтобы не видел сообщение с кнопками)
-      setTimeout(async () => {
-        await channel.permissionOverwrites.edit(userId, {
-          ViewChannel: true,
-          SendMessages: true,
-          ReadMessageHistory: true
-        });
-      }, 2000);
-    }
   }
 });
 
